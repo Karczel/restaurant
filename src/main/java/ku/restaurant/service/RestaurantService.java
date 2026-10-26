@@ -1,5 +1,6 @@
 package ku.restaurant.service;
 
+import ku.restaurant.dto.RestaurantRequest;
 import ku.restaurant.entity.Restaurant;
 import ku.restaurant.repository.RestaurantRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class RestaurantService {
@@ -22,9 +24,43 @@ public class RestaurantService {
         return repository.findAll();
     }
 
-    public Restaurant create(Restaurant restaurant) {
+    public Restaurant create(RestaurantRequest request) {
+        Restaurant restaurant = new Restaurant();
+        restaurant.setName(request.getName());
+        restaurant.setRating(request.getRating());
+        restaurant.setLocation(request.getLocation());
+
         restaurant.setCreatedAt(Instant.now());
         Restaurant record = repository.save(restaurant);
         return record;
+    }
+
+    public Restaurant getRestaurantById(UUID id) {
+        return repository.findById(id).get();
+    }
+
+    public Restaurant update(RestaurantRequest requestBody) {
+        UUID id = requestBody.getId();
+        Restaurant record = repository.findById(id).get();
+        record.setName(requestBody.getName());
+        record.setRating(requestBody.getRating());
+        record.setLocation(requestBody.getLocation());
+
+        record = repository.save(record);
+        return record;
+    }
+
+    public Restaurant delete(UUID id) {
+        Restaurant record = repository.findById(id).get();
+        repository.deleteById(id);
+        return record;
+    }
+
+    public Restaurant getRestaurantByName(String name) {
+        return repository.findByName(name);
+    }
+
+    public List<Restaurant> getRestaurantByLocation(String location) {
+        return repository.findByLocation(location);
     }
 }

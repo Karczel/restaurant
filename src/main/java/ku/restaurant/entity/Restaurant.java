@@ -5,24 +5,25 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 public class Restaurant {
 
     @Id
     @GeneratedValue
-    private int id;
+    private UUID id;
 
     private String name;
     private double rating;
     private String location;
     private Instant createdAt;
 
-    public int getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
