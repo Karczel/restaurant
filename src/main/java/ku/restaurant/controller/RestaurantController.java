@@ -1,5 +1,6 @@
 package ku.restaurant.controller;
 
+import jakarta.validation.Valid;
 import ku.restaurant.dto.RestaurantRequest;
 import ku.restaurant.entity.Restaurant;
 import ku.restaurant.service.RestaurantService;
@@ -26,7 +27,7 @@ public class RestaurantController {
     }
 
     @PostMapping("/restaurants")
-    public Restaurant create(@RequestBody RestaurantRequest restaurant) {
+    public Restaurant create(@Valid @RequestBody RestaurantRequest restaurant) {
         return service.create(restaurant);
     }
 
@@ -36,7 +37,7 @@ public class RestaurantController {
     }
 
     @PutMapping("/restaurants")
-    public Restaurant update(@RequestBody RestaurantRequest restaurant) {
+    public Restaurant update(@Valid @RequestBody RestaurantRequest restaurant) {
         return service.update(restaurant);
     }
 
