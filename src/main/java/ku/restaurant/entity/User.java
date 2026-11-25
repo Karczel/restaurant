@@ -1,6 +1,7 @@
 package ku.restaurant.entity;
 
 import jakarta.persistence.*;
+import ku.restaurant.security.AttributeEncryptor;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -16,6 +17,7 @@ public class User {
     private String username;
     private String password;
 
+    @Convert(converter = AttributeEncryptor.class)
     private String name;
     private String role;
     private Instant createdAt;
