@@ -4,9 +4,12 @@ import jakarta.validation.Valid;
 import ku.restaurant.dto.LoginRequest;
 import ku.restaurant.dto.SignupRequest;
 import ku.restaurant.security.JwtUtil;
+import ku.restaurant.security.SecurityConfig;
 import ku.restaurant.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -16,6 +19,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -33,16 +38,41 @@ public class AuthenticationController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> authenticateUser(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest request) {
+
+
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getUsername(),
                         request.getPassword()
                 )
         );
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        return ResponseEntity.ok(jwtUtils.generateToken(userDetails.getUsername()));
+        UserDetails userDetails =
+                (UserDetails) authentication.getPrincipal();
+
+
+        String token = jwtUtils.generateToken(userDetails.getUsername());
+
+
+        // Create HttpOnly cookie
+        ResponseCookie cookie =
+                ResponseCookie.from(SecurityConfig.AUTH_COOKIE_NAME, token)
+                        .httpOnly(true)          // Javascript cannot read cookie
+                        .secure(true)            // HTTPS only
+                        .path("/")
+                        .maxAge(60 * 60)         // 1 hour
+                        .sameSite("Strict")
+                        .build();
+
+
+        // Return cookie in response headers, optional JSON body
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(Map.of(
+                        "message", "Successfully logged in"
+                ));
     }
+
 
     @PostMapping("/signup")
     public ResponseEntity<String> registerUser(@Valid @RequestBody SignupRequest request) {
