@@ -12,9 +12,16 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class JwtUtil {
+
+    // Key: token -> value: username
+    // we usually store these tokens in an in-memory database such as Redis
+    private final Map<String, String> tokenStore = new ConcurrentHashMap<>();
+
 
     @Value("${jwt.secret}")
     private String jwtSecret;
@@ -30,13 +37,16 @@ public class JwtUtil {
     }
 
     public String generateToken(String username) {
-        return Jwts.builder()
+        String token = Jwts.builder()
                 .subject(username)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
                 .signWith(key, Jwts.SIG.HS256)
                 .compact();
+        tokenStore.put(token, username);
+        return token;
     }
+
     public String getUsernameFromToken(String token) {
         return Jwts.parser()
                 .verifyWith(key).build()
@@ -62,4 +72,9 @@ public class JwtUtil {
         }
         return false;
     }
+
+    public void invalidateToken(String token) {
+        tokenStore.remove(token);
+    }
+
 }

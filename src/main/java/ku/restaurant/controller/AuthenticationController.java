@@ -1,8 +1,12 @@
 package ku.restaurant.controller;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import ku.restaurant.dto.LoginRequest;
 import ku.restaurant.dto.SignupRequest;
+import ku.restaurant.dto.UserInfoResponse;
 import ku.restaurant.security.JwtUtil;
 import ku.restaurant.security.SecurityConfig;
 import ku.restaurant.service.UserService;
@@ -15,10 +19,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -73,6 +74,33 @@ public class AuthenticationController {
                 ));
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
+        String token = extractTokenFromCookie(request);
+
+
+        if (token != null)
+            jwtUtils.invalidateToken(token);
+
+
+        // Clear cookie
+        ResponseCookie cleared =
+                ResponseCookie.from(SecurityConfig.AUTH_COOKIE_NAME, "")
+                        .httpOnly(true)
+                        .secure(true)
+                        .path("/")
+                        .maxAge(0)       // expires immediately
+                        .sameSite("None")
+                        .build();
+
+
+        response.addHeader("Set-Cookie", cleared.toString());
+
+
+        return ResponseEntity.ok("Logged out");
+    }
+
+
 
     @PostMapping("/signup")
     public ResponseEntity<String> registerUser(@Valid @RequestBody SignupRequest request) {
@@ -81,4 +109,35 @@ public class AuthenticationController {
         userService.createUser(request);
         return ResponseEntity.ok("User registered successfully!");
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> me(HttpServletRequest request) {
+        String token = extractTokenFromCookie(request);
+        if (token == null) {
+            return ResponseEntity.status(401).body("No auth token");
+        }
+
+
+        String username = jwtUtils.getUsernameFromToken(token);
+        if (username == null) {
+            return ResponseEntity.status(401).body("Invalid token");
+        }
+
+
+        return ResponseEntity.ok(new UserInfoResponse(username));
+    }
+
+
+    private String extractTokenFromCookie(HttpServletRequest request) {
+        if (request.getCookies() == null) return null;
+
+
+        for (Cookie cookie : request.getCookies()) {
+            if (SecurityConfig.AUTH_COOKIE_NAME.equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
+    }
+
 }
